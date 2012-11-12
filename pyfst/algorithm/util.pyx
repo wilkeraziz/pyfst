@@ -1,6 +1,6 @@
 import gv
-from fst import StdVectorFst
 from random import random
+from pyfst.fst import StdVectorFst
 
 def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
     """
@@ -12,12 +12,12 @@ def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
     """
     with open(stem + '.dot', 'wb') as D:
         D.write(fst.draw(isym, osym))
-    
+
     dot = gv.read(stem + '.dot')
     gv.layout(dot, 'dot')
     gv.render(dot, ext, stem + '.' + ext)
 
-def make_fsa(states = 0, initial = -1, final = [], arcs = [], sort = False, Fst = StdVectorFst):
+def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = False, Fst = StdVectorFst):
     """
     Builds an FSA.
     @param states: number of states
@@ -37,6 +37,8 @@ def make_fsa(states = 0, initial = -1, final = [], arcs = [], sort = False, Fst 
     else:
         for sid in final:
             f[sid].final = one
+    cdef int sfrom, sto, label
+    cdef float weight
     [f.add_arc(sfrom, sto, label, label, weight) for sfrom, sto, label, weight in arcs]
     if sort:
         f.arc_sort_input()
@@ -52,7 +54,7 @@ def path_fsa(path, weights = None, label = lambda transition: transition, Fst = 
     @param Fst: FST type (defaults to fst.StdVectorFst)
     @return: fst.Fst
     """
-    N = len(path) + 1
+    cdef int N = len(path) + 1
     f = make_fsa(states=N, initial=0, final=N - 1, Fst = Fst)
     if weights is None:
         one = float(f.semiring()(True))
@@ -62,7 +64,7 @@ def path_fsa(path, weights = None, label = lambda transition: transition, Fst = 
     [f.add_arc(i, i + 1, label(arc), label(arc), w(i)) for i, arc in enumerate(path)]
     return f
 
-def network_fsa(nLayer, sLayer, arc = lambda sfrom, sto: (sto, random()), Fst = StdVectorFst):
+def network_fsa(int nLayer, int sLayer, arc = lambda sfrom, sto: (sto, random()), Fst = StdVectorFst):
     """
     Makes an FSA that has n layers in between the initial and the final state.
     Each layer has m states and every state in layer i is connected to every state in layer i+1.
@@ -73,7 +75,8 @@ def network_fsa(nLayer, sLayer, arc = lambda sfrom, sto: (sto, random()), Fst = 
     @param Fst: FST type (defaults to StdVectorFst).
     """
     f = make_fsa(states = nLayer * sLayer + 2, initial = 0, final = nLayer * sLayer + 1)
-    
+    cdef int n, i, j, sfrom, sto, l
+    cdef float w
     for n in xrange(nLayer - 1):
         for i in xrange(sLayer):
             sfrom = n * sLayer + i + 1
@@ -92,30 +95,3 @@ def network_fsa(nLayer, sLayer, arc = lambda sfrom, sto: (sto, random()), Fst = 
 
     return f
 
-def main():
-    """
-    Test
-    """
-    p = path_fsa([10, 20, 30])
-    draw(p, 'examples/util.path')
-    wp = path_fsa([(1,10), (2,20), (3,30)], weights = [0.5, 0.6, 0.7], label = lambda pair: pair[1])
-    draw(wp, 'examples/util.wpath')
-
-    wfsa = make_fsa(6, 0, 5, sort = True,
-            arcs = [
-                (0,1,1,1),
-                (0,2,2,1),
-                (1,3,3,2),
-                (1,4,4,4),
-                (2,3,3,2.5),
-                (2,4,4,5),
-                (3,5,5,1),
-                (4,5,5,1)
-                ])
-    draw(wfsa, 'examples/util.wfsa')
-
-    net = network_fsa(3,3)
-    draw(net, 'examples/util.net')
-
-if __name__ == '__main__':
-    main()

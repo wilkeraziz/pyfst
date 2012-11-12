@@ -1,18 +1,16 @@
-from fst import StdVectorFst
+from pyfst.fst import StdVectorFst
+from pyfst.algorithm.util import make_fsa
 from pytrie import Trie
 
-from util import draw, make_fsa, path_fsa
-from time import time
-
-def DirectMapper(V):
+def _direct(V):
     for sym in V:
         yield sym, tuple([sym])
 
-def MaskedMapper(V):
+def _masked(V):
     for sym, labels in V.iteritems():
         yield sym, labels
 
-def DFASubstringMatcher(V, N, alpha, Fst = StdVectorFst, sort = True):
+def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     '''
     Builds the deterministic FSA (DFA) that reweights a substring (represented by a mask).
     @type V: dict (if N is a mask) or other set-like iterable (if N is directly specified in terms of the vocabulary)
@@ -25,7 +23,7 @@ def DFASubstringMatcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     '''
     assert len(N) > 1, 'At least a bigram is necessary'
     
-    mapper = MaskedMapper if isinstance(V, dict) else DirectMapper
+    mapper = _masked if isinstance(V, dict) else _direct
     last = len(N)
 
     # initialize the FST
@@ -70,7 +68,7 @@ def DFASubstringMatcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     if sort: f.arc_sort_input()
     return f
 
-def DFATrieMatcher(V, N, Fst = StdVectorFst, sort = True):
+def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
     '''
     Builds the deterministic FSA (DFA) that reweights a substring.
     A substring maybe represented directly with the symbols of the vocabulary (in which case the vocabulary is a set of symbols),
@@ -139,30 +137,3 @@ def DFATrieMatcher(V, N, Fst = StdVectorFst, sort = True):
     if sort: f.arc_sort_input()
     return f
 
-
-def main():
-    """
-    Test
-    """
-    dfaSM1 = DFASubstringMatcher(range(1,4), [1,2,1,2], 10) 
-    draw(dfaSM1, 'examples/matching.substring1')
-    dfaSM2 = DFASubstringMatcher({'the':[1,2], 'black':[3,4], 'dog':[5,6], 'barked':[7,8]}, ['the', 'black', 'the'], 10) 
-    draw(dfaSM2, 'examples/matching.substring2')
-    
-    N1 = Trie()
-    N1[tuple([2,3])] = 1
-    N1[tuple([1,2,3])] = 2
-    N1[tuple([2,3,4])] = 3
-    N1[tuple([1,2,3,4])] = 4
-    N1[tuple([4,1])] = 5
-    N1[tuple([1,2])] = 0.5
-    V = range(1,200000)
-    t0 = time()
-    dfaTM1 = DFATrieMatcher(V, N1)
-    t1 = time()
-    print 'DFATrieMatcher', t1-t0
-    p1 = [1,2,3,4,1,2,3,4]
-    draw(dfaTM1.intersect(path_fsa(p1)), 'examples/matching.trie1')
-
-if __name__ == '__main__':
-    main()

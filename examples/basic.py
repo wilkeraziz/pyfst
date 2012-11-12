@@ -1,4 +1,4 @@
-from fst import StdVectorFst
+from pyfst.fst import StdVectorFst
 
 fst = StdVectorFst()
 

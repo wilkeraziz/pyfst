@@ -1,11 +1,7 @@
 from numpy.random import uniform
-from collections import Counter, defaultdict, deque
-from fst import StdVectorFst, LogVectorFst
+from collections import Counter, deque
+from pyfst.fst import StdVectorFst, LogVectorFst
 from bisect import bisect_left
-
-from time import time
-from random import random, randint
-from util import network_fsa
 
 class Path(tuple):
     """
@@ -57,11 +53,7 @@ def samples(fst, totals, n = 100, key = lambda sid, arc: arc.ilabel):
     @type key: function, receives the state id and the Arc and returns a key representation of the transition.
     @return: a Counter of Path objects.
     """
-    selection = Counter()
-    for i in xrange(n):
-        path = sample(fst, totals, key)
-        selection[path] += 1
-    return selection
+    return Counter(sample(fst, totals, key) for _ in xrange(n))
 
 class Prefix(object):
     """
@@ -129,69 +121,6 @@ def deque_samples(fst, totals, n = 100, key = lambda sid, arc: arc.ilabel):
             # otherwise we get sample prefix.n transitions
             transitions = sample_transitions(fst, prefix.n, prefix.last, totals)
             # and expand the prefix with the sampled transitions
-            for sfrom, arc, times in transitions:
-                Q.append(Prefix(arc.nextstate, times, prefix.path + [(sfrom, arc)]))
+            [Q.append(Prefix(arc.nextstate, times, prefix.path + [(sfrom, arc)])) for sfrom, arc, times in transitions]
     return samples
 
-def main():
-    """
-    Test
-    """
-    A = defaultdict(lambda : defaultdict(int))
-    A[0][1] = [1, 2]
-    A[0][2] = [2, 1]
-    A[1][3] = [3, 2]
-    A[1][4] = [4, 4]
-    A[2][3] = [5, 6]
-    A[2][4] = [6, 2]
-    A[3][5] = [7, 1]
-    A[4][5] = [8, 2]
-    
-    def custom(sfrom, sto):
-        label = sto
-        w = random()
-        if sto % 101 != 1:
-            w += randint(5,15)
-        return label, w
-
-    t0 = time()
-    small = network_fsa(2, 2, arc = lambda sfrom, sto: A[sfrom][sto])
-    t1 = time()
-    print 'Small: states %d arcs %d time %f' % (len(small), small.num_arcs(), t1-t0)
-    
-    t0 = time()
-    big = network_fsa(20, 400, arc = custom)
-    t1 = time()
-    print 'Big: states %d arcs %d time %f' % (len(big), big.num_arcs(), t1-t0)
-
-    N = 1000
-    printing = 10
-    for f in [small, big]:
-        t0 = time()
-        f = LogVectorFst(f)
-        t1 = time()
-        print 'Tropical -> Log', t1-t0
-
-        t0 = time()
-        totals = f.shortest_distance(True)
-        t1 = time()
-        print 'shortest distance', t1-t0
-    
-        print 'samples'
-        t0 = time()
-        dist = samples(f, totals, N)
-        t1 = time()
-        for path, n in dist.most_common(printing):
-            print ' ',n, path
-        print '', N, 'samples', t1-t0
-
-        print 'deque_samples'
-        t0 = time()
-        dist = deque_samples(f, totals, N)
-        t1 = time()
-        for path, n in dist.most_common(printing):
-            print ' ',n, path
-        print '', N, 'samples', t1-t0
-
-if __name__ == '__main__':
-    main()

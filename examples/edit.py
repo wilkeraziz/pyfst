@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-import fst
+import pyfst.fst as fst
 
 def make_input(word, syms):
     """

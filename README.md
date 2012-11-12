@@ -5,7 +5,16 @@ Python interface to [OpenFst](http://openfst.org)
 ## Installation
 
 1. Install the latest version of OpenFst (1.3.2)
-2. `pip install -e git+https://github.com/vchahun/pyfst.git#egg=pyfst`
+
+2. 
+    
+    * `pip install -e git+https://github.com/vchahun/pyfst.git#egg=pyfst`
+
+    * or you can do
+
+            python setup.py build_ext -i [--cython]
+
+        If you use the option `--cython` the setup will compile pyx files into cpp files (requires Cython 0.17.1)
 
 ## Usage
 
