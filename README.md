@@ -13,6 +13,7 @@ Python interface to [OpenFst](http://openfst.org)
         python setup.py build_ext -i [--mustache] [--cython]
 
     If you use the option `--mustache` the mustache templates will be used to generate `fst.pyx` and `cfst.pxd` (requires [mustache](http://mustache.github.com/)).
+
     If you use the option `--cython` the setup will compile pyx files into cpp files (requires [Cython 0.17.1](http://cython.org)).
 
 ## Usage
@@ -55,7 +56,7 @@ t.shortest_path() # 2 -(a:A/0.5)-> 1 -(c:C/2.5)-> 0/3.5
 
 ## Examples
 
-    In `examples` you will find a bunch of test cases, e.g. `edit.py`, `sampling.py`, etc.
+In `examples` you will find a bunch of test cases, e.g. `edit.py`, `sampling.py`, etc.
 
 ## IPython notebook
 

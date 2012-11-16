@@ -89,8 +89,7 @@ def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
     seen = set()
     last = 0 # reserves 0 to the empty prefix
     P = Trie({tuple():last})
-    weights = [one]
-    finals = set([last])
+    stateinfo = [[one, True]] # pairs: weight, is_final
 
     # Enumerate reversed prefixes
     for ngram, w in N.iteritems():
@@ -100,39 +99,39 @@ def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
             rprefix = tuple(reversed(ngram[:i + 1])) # reverses the prefix
             last += 1
             P[rprefix] = last
-            weights.append(one) # this state has weight ONE (so far) and it is not final
+            stateinfo.append([one, False])
         # includes the reversed ngram in the trie
         last += 1
         P[tuple(reversed(ngram))] = last
-        weights.append(w) # this state has weight w (so far) and it is final
-        finals.add(last)
+        stateinfo.append([w, True])
 
     # "percolating" weights: if we sort the reversed prefixes "alphabetically" then, we simply update each weight by summing the weight of its longest prefix
     # that is not itself and it is in the trie
     for rprefix, sid in sorted(P.iteritems(), key = lambda pair: pair[0]):
         head, state = P.longest_prefix_item(rprefix[:-1])
-        weights[sid] += weights[state]
+        stateinfo[sid][0] += stateinfo[state][0] # accumulate weights
+        stateinfo[sid][1] |= stateinfo[state][1] # update 'is_final' property
     
-    f = make_fsa(states = last + 1, initial = 0, final = finals)
+    f = make_fsa(states = last + 1, initial = 0, final = (sid for sid, props in enumerate(stateinfo) if props[1]))
 
     # Transitions at each state
-    # I am going to duplicate code, because it turned out to be 10-15% faster 
+    # I am going to duplicate code, because it turned out to be 10-15% faster than using the mappers 
     if not isinstance(V, dict):
         unseen = frozenset(sym for sym in V).difference(seen)
         for rpfrom, sfrom in P.iteritems(): # rpfrom - departure reversed prefix 
-            [f.add_arc(sfrom, 0, sym, sym, weights[0]) for sym in unseen]
+            [f.add_arc(sfrom, 0, sym, sym, stateinfo[0][0]) for sym in unseen]
             for sym in seen:
                 current = tuple([sym]) + rpfrom
                 rpto, sto = P.longest_prefix_item(current)
-                f.add_arc(sfrom, sto, sym, sym, weights[sto])
+                f.add_arc(sfrom, sto, sym, sym, stateinfo[sto][0])
     else:
         unseen = frozenset(sym for sym in V.iterkeys()).difference(seen)
         for rpfrom, sfrom in P.iteritems(): # rpfrom - departure reversed prefix 
-            [[f.add_arc(sfrom, 0, label, label, weights[0]) for label in V[sym]] for sym in unseen]
+            [[f.add_arc(sfrom, 0, label, label, stateinfo[0][0]) for label in V[sym]] for sym in unseen]
             for sym in seen:
                 current = tuple([sym]) + rpfrom
                 rpto, sto = P.longest_prefix_item(current)
-                [f.add_arc(sfrom, sto, label, label, weights[sto]) for label in V[sym]]
+                [f.add_arc(sfrom, sto, label, label, stateinfo[sto][0]) for label in V[sym]]
 
     if sort: f.arc_sort_input()
     return f

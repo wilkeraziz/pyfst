@@ -26,4 +26,21 @@ dfaTM1 = trie_matcher(V, N1)
 t1 = time()
 print 'trie matcher', t1-t0
 p1 = [1,2,3,4,1,2,3,4]
-draw(dfaTM1.intersect(path_fsa(p1)), 'matching-trie1')
+draw(dfaTM1.intersect(path_fsa(p1)), 'matching-trie-path1')
+
+N2 = Trie()
+N2[tuple('a b'.split())] = 1
+N2[tuple('b c'.split())] = 1.5
+N2[tuple('b c d'.split())] = 2
+N2[tuple('e a b d'.split())] = 3
+N2[tuple('a b c d e'.split())] = 4
+V2 = {'a':[1], 'b':[2], 'c':[3], 'd':[4], 'e':[5], 'f':[6]}
+t0 = time()
+dfaTM2 = trie_matcher(V2, N2)
+t1 = time()
+print 'trie matcher', t1-t0
+draw(dfaTM2, 'matching-trie-regex')
+p2 = [1,2,3,4]
+draw(dfaTM2.intersect(path_fsa(p2)), 'matching-trie-path2')
+p3 = [5,1,2]
+draw(dfaTM2.intersect(path_fsa(p3)), 'matching-trie-path3')
