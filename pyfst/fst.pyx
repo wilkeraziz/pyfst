@@ -133,7 +133,7 @@ cdef class TropicalWeight:
 
     ZERO = TropicalWeight(cfst.TropicalWeightZero().Value())
     ONE = TropicalWeight(cfst.TropicalWeightOne().Value())
-    
+
     @classmethod
     def from_real(cls, value):
         return TropicalWeight(-log(value))
@@ -171,7 +171,7 @@ cdef class TropicalWeight:
         elif op == 0: # <
             return float(x) > float(y)
         elif op == 1: # <=
-            return float(x) >= float(y)
+            return float(x) >= float(y)        
         raise NotImplemented('comparison not implemented for TropicalWeight')
 
     def __add__(TropicalWeight x, TropicalWeight y):
@@ -276,7 +276,7 @@ cdef class StdVectorFst(Fst):
     cdef public SymbolTable isyms, osyms
 
     SEMIRING = TropicalWeight
-
+    
     @classmethod
     def semiring(cls):
         return StdVectorFst.SEMIRING
@@ -311,7 +311,7 @@ cdef class StdVectorFst(Fst):
 
     def __len__(self):
         return self.fst.NumStates()
-
+        
     def num_arcs(self):
         cdef StdState state
         return sum(len(state) for state in self)
@@ -573,7 +573,7 @@ cdef class StdVectorFst(Fst):
         if not isinstance(threshold, TropicalWeight):
             threshold = TropicalWeight(threshold)
         cfst.Prune(self.fst, (<TropicalWeight> threshold).weight[0])
-    
+        
     def connect(self):
         """fst.connect(): removes states and arcs that are not on successful paths."""
         cfst.Connect(self.fst)
@@ -604,7 +604,7 @@ cdef class StdVectorFst(Fst):
         cdef StdVectorFst result = StdVectorFst(isyms=self.isyms, osyms=self.osyms)
         cfst.ArcMap(self.fst[0], result.fst, cfst.RmTropicalWeightMapper())
         return result
-    
+        
     def invert_weights(self):
         """fst.invert_weights(): transducer with inverted weights"""
         cdef StdVectorFst result = StdVectorFst(isyms=self.isyms, osyms=self.osyms)
@@ -668,7 +668,7 @@ cdef class LogWeight:
         self.weight = new cfst.LogWeight((cfst.LogWeightOne() if value is True or value is None
                         else cfst.LogWeightZero() if value is False
                         else cfst.LogWeight(float(value))))
-    
+
     def __dealloc__(self):
         del self.weight
 
@@ -696,7 +696,7 @@ cdef class LogWeight:
         elif op == 0: # <
             return float(x) > float(y)
         elif op == 1: # <=
-            return float(x) >= float(y)
+            return float(x) >= float(y)        
         raise NotImplemented('comparison not implemented for LogWeight')
 
     def __add__(LogWeight x, LogWeight y):
@@ -836,7 +836,7 @@ cdef class LogVectorFst(Fst):
 
     def __len__(self):
         return self.fst.NumStates()
-    
+        
     def num_arcs(self):
         cdef LogState state
         return sum(len(state) for state in self)
@@ -1098,7 +1098,7 @@ cdef class LogVectorFst(Fst):
         if not isinstance(threshold, LogWeight):
             threshold = LogWeight(threshold)
         cfst.Prune(self.fst, (<LogWeight> threshold).weight[0])
-    
+        
     def connect(self):
         """fst.connect(): removes states and arcs that are not on successful paths."""
         cfst.Connect(self.fst)
@@ -1129,7 +1129,7 @@ cdef class LogVectorFst(Fst):
         cdef LogVectorFst result = LogVectorFst(isyms=self.isyms, osyms=self.osyms)
         cfst.ArcMap(self.fst[0], result.fst, cfst.RmLogWeightMapper())
         return result
-    
+        
     def invert_weights(self):
         """fst.invert_weights(): transducer with inverted weights"""
         cdef LogVectorFst result = LogVectorFst(isyms=self.isyms, osyms=self.osyms)

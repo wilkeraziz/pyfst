@@ -7,6 +7,7 @@ from libcpp.string cimport string
 from libcpp.pair cimport pair
 from libc.stdint cimport uint64_t
 from util cimport ifstream, ostringstream
+from math import log
 
 EPSILON_ID = 0
 EPSILON = u'\u03b5'
@@ -134,6 +135,10 @@ cdef class {{weight}}:
     ZERO = {{weight}}(cfst.{{weight}}Zero().Value())
     ONE = {{weight}}(cfst.{{weight}}One().Value())
 
+    @classmethod
+    def from_real(cls, value):
+        return {{weight}}(-log(value))
+
     def __init__(self, value):
         """{{weight}}(value) -> {{semiring}} weight initialized with the given value"""
         self.weight = new cfst.{{weight}}((cfst.{{weight}}One() if value is True or value is None
@@ -160,6 +165,14 @@ cdef class {{weight}}:
             return x.weight[0] == y.weight[0]
         elif op == 3: # !=
             return not (x == y)
+        elif op == 4: # >  TODO: check how openfst orders weights (for while this simply reflects the log operation)
+            return float(x) < float(y)
+        elif op == 5: # >=
+            return float(x) <= float(y)
+        elif op == 0: # <
+            return float(x) > float(y)
+        elif op == 1: # <=
+            return float(x) >= float(y)        
         raise NotImplemented('comparison not implemented for {{weight}}')
 
     def __add__({{weight}} x, {{weight}} y):
@@ -173,12 +186,16 @@ cdef class {{weight}}:
         return result
 
     def __iadd__(self, {{weight}} other):
+        result = new cfst.{{weight}}(cfst.Plus(self.weight[0], other.weight[0]))
         del self.weight
-        self.weight = new cfst.{{weight}}(cfst.Plus(self.weight[0], other.weight[0]))
+        self.weight = result
+        return self
 
     def __imul__(self, {{weight}} other):
+        result = new cfst.{{weight}}(cfst.Times(self.weight[0], other.weight[0]))
         del self.weight
-        self.weight = new cfst.{{weight}}(cfst.Times(self.weight[0], other.weight[0]))
+        self.weight = result
+        return self
 
 cdef class {{arc}}:
     cdef cfst.{{arc}}* arc
@@ -259,6 +276,12 @@ cdef class {{fst}}(Fst):
     cdef cfst.{{fst}}* fst
     cdef public SymbolTable isyms, osyms
 
+    SEMIRING = {{weight}}
+    
+    @classmethod
+    def semiring(cls):
+        return {{fst}}.SEMIRING
+
     def __init__(self, source=None, isyms=None, osyms=None):
         """{{fst}}(isyms=None, osyms=None) -> empty finite-state transducer
         {{fst}}(source) -> copy of the source transducer"""
@@ -289,6 +312,10 @@ cdef class {{fst}}(Fst):
 
     def __len__(self):
         return self.fst.NumStates()
+        
+    def num_arcs(self):
+        cdef {{state}} state
+        return sum(len(state) for state in self)
 
     def __str__(self):
         return '<{{fst}} with %d states>' % len(self)
@@ -547,6 +574,11 @@ cdef class {{fst}}(Fst):
         if not isinstance(threshold, {{weight}}):
             threshold = {{weight}}(threshold)
         cfst.Prune(self.fst, (<{{weight}}> threshold).weight[0])
+        
+    def connect(self):
+        """fst.connect(): removes states and arcs that are not on successful paths."""
+        cfst.Connect(self.fst)
+        return self
 
     def plus_map(self, value):
         """fst.plus_map(value) -> transducer with weights equal to the original weights
@@ -573,6 +605,12 @@ cdef class {{fst}}(Fst):
         cdef {{fst}} result = {{fst}}(isyms=self.isyms, osyms=self.osyms)
         cfst.ArcMap(self.fst[0], result.fst, cfst.Rm{{weight}}Mapper())
         return result
+        
+    def invert_weights(self):
+        """fst.invert_weights(): transducer with inverted weights"""
+        cdef {{fst}} result = {{fst}}(isyms=self.isyms, osyms=self.osyms)
+        cfst.ArcMap(self.fst[0], result.fst, cfst.Invert{{weight}}Mapper())
+        return result
 
     def draw(self, SymbolTable isyms=None,
             SymbolTable osyms=None,
@@ -595,6 +633,25 @@ cdef class {{fst}}(Fst):
         cdef bytes out_str = out.str()
         del drawer, out
         return out_str
+    
+    def paths(self, bint noeps = True):
+        '''Enumerates paths doing a depth-first search'''
+        def visit(int sid, list prefix):
+            cdef {{arc}} arc
+            cdef list path
+            if not self[sid].final:
+                for arc in self[sid]:
+                    if noeps and arc.ilabel == EPSILON_ID:
+                        for path in visit(arc.nextstate, prefix):
+                            yield path
+                    else:
+                        for path in visit(arc.nextstate, prefix + [arc]):
+                            yield path
+            else:
+                yield prefix
+
+        for path in visit(self.start, []):
+            yield path
 
 {{/types}}
 

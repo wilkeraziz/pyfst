@@ -99,6 +99,8 @@ cdef extern from "<fst/fstlib.h>" namespace "fst":
         Times{{arc}}Mapper({{weight}})
     cdef cppclass Rm{{weight}}Mapper "fst::RmWeightMapper<fst::{{arc}}>"(ArcMapper):
         Rm{{weight}}Mapper()
+    cdef cppclass Invert{{weight}}Mapper "fst::InvertWeightMapper<fst::{{arc}}>"(ArcMapper):
+        Invert{{weight}}Mapper()        
     cdef cppclass {{convert}}WeightConvertMapper "fst::WeightConvertMapper<fst::{{other}}Arc, fst::{{arc}}>"(ArcMapper):
         {{convert}}WeightConvertMapper()
 {{/types}}
@@ -139,6 +141,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst":
     cdef void ArcSort(MutableFst* fst, ILabelCompare[{{arc}}]& compare)
     cdef void ArcSort(MutableFst* fst, OLabelCompare[{{arc}}]& compare)
     cdef void Prune(MutableFst* ifst, {{weight}} threshold)
+    cdef void Connect(MutableFst *fst)
 {{/types}}
     # other
     cdef void Union(MutableFst* ifst1, Fst &ifst2)

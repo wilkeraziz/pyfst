@@ -112,7 +112,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst":
     cdef cppclass RmTropicalWeightMapper "fst::RmWeightMapper<fst::StdArc>"(ArcMapper):
         RmTropicalWeightMapper()
     cdef cppclass InvertTropicalWeightMapper "fst::InvertWeightMapper<fst::StdArc>"(ArcMapper):
-        InvertTropicalWeightMapper()
+        InvertTropicalWeightMapper()        
     cdef cppclass LogToStdWeightConvertMapper "fst::WeightConvertMapper<fst::LogArc, fst::StdArc>"(ArcMapper):
         LogToStdWeightConvertMapper()
     cdef cppclass PlusLogArcMapper "fst::PlusMapper<fst::LogArc>"(ArcMapper):
@@ -122,7 +122,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst":
     cdef cppclass RmLogWeightMapper "fst::RmWeightMapper<fst::LogArc>"(ArcMapper):
         RmLogWeightMapper()
     cdef cppclass InvertLogWeightMapper "fst::InvertWeightMapper<fst::LogArc>"(ArcMapper):
-        InvertLogWeightMapper()
+        InvertLogWeightMapper()        
     cdef cppclass StdToLogWeightConvertMapper "fst::WeightConvertMapper<fst::StdArc, fst::LogArc>"(ArcMapper):
         StdToLogWeightConvertMapper()
         
@@ -160,6 +160,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst":
     cdef void ArcSort(MutableFst* fst, ILabelCompare[StdArc]& compare)
     cdef void ArcSort(MutableFst* fst, OLabelCompare[StdArc]& compare)
     cdef void Prune(MutableFst* ifst, TropicalWeight threshold)
+    cdef void Connect(MutableFst *fst)
     cdef void ArcSort(MutableFst* fst, ILabelCompare[LogArc]& compare)
     cdef void ArcSort(MutableFst* fst, OLabelCompare[LogArc]& compare)
     cdef void Prune(MutableFst* ifst, LogWeight threshold)
