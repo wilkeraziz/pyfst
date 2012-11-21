@@ -17,7 +17,7 @@ def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
     gv.layout(dot, 'dot')
     gv.render(dot, ext, stem + '.' + ext)
 
-def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = False, Fst = StdVectorFst):
+def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = False, fst = StdVectorFst):
     """
     Builds an FSA.
     @param states: number of states
@@ -25,9 +25,9 @@ def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = Fal
     @param final: final states (int or iterable)
     @param arcs: list of transitions (each transition is a tuple: origin, destination, label, weight)
     @param sort: ilabel-sorts before returning
-    @param Fst: type of Fst (defaults to fst.StdVectorFst)
+    @param fst: type of Fst (defaults to fst.StdVectorFst)
     """
-    f = Fst()
+    f = fst()
     [f.add_state() for _ in xrange(states)] 
     if initial >= 0:
         f.start = initial
@@ -45,17 +45,17 @@ def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = Fal
     return f
 
 
-def path_fsa(path, weights = None, label = lambda transition: transition, Fst = StdVectorFst):
+def path_fsa(path, weights = None, label = lambda transition: transition, fst = StdVectorFst):
     """Makes an acceptor out of a path of transitions and scores.
     Each transition i is weighted as weights[i] (or ONE if not specified) and labelled as label(path[i]).
     @param path: sequence of transitions.
     @param weights: sequence of weights (defaults to a sequence of ONEs).
     @param label: a function that returns the label (int) of a transition.
-    @param Fst: FST type (defaults to fst.StdVectorFst)
+    @param fst: FST type (defaults to fst.StdVectorFst)
     @return: fst.Fst
     """
     cdef int N = len(path) + 1
-    f = make_fsa(states=N, initial=0, final=N - 1, Fst = Fst)
+    f = make_fsa(states=N, initial=0, final=N - 1, fst = fst)
     if weights is None:
         one = float(f.semiring()(True))
         w = lambda sid : one
@@ -64,7 +64,7 @@ def path_fsa(path, weights = None, label = lambda transition: transition, Fst = 
     [f.add_arc(i, i + 1, label(arc), label(arc), w(i)) for i, arc in enumerate(path)]
     return f
 
-def network_fsa(int nLayer, int sLayer, arc = lambda sfrom, sto: (sto, random()), Fst = StdVectorFst):
+def network_fsa(int nLayer, int sLayer, arc = lambda sfrom, sto: (sto, random()), fst = StdVectorFst):
     """
     Makes an FSA that has n layers in between the initial and the final state.
     Each layer has m states and every state in layer i is connected to every state in layer i+1.
@@ -72,9 +72,9 @@ def network_fsa(int nLayer, int sLayer, arc = lambda sfrom, sto: (sto, random())
     @param nLayer: number of layers.
     @param sLayer: size of each layer.
     @param arc: function that receives origin and destination and returns a label and a weight.
-    @param Fst: FST type (defaults to StdVectorFst).
+    @param fst: FST type (defaults to StdVectorFst).
     """
-    f = make_fsa(states = nLayer * sLayer + 2, initial = 0, final = nLayer * sLayer + 1)
+    f = make_fsa(states = nLayer * sLayer + 2, initial = 0, final = nLayer * sLayer + 1, fst = fst)
     cdef int n, i, j, sfrom, sto, l
     cdef float w
     for n in xrange(nLayer - 1):

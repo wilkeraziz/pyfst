@@ -363,6 +363,7 @@ cdef class {{fst}}(Fst):
         cdef cfst.{{arc}}* arc = new cfst.{{arc}}(ilabel, olabel, (<{{weight}}> weight).weight[0], dest)
         self.fst.AddArc(source, arc[0])
         del arc
+        return self
 
     def add_state(self):
         """fst.add_state() -> new state"""
@@ -432,6 +433,7 @@ cdef class {{fst}}(Fst):
         """fst.set_union({{fst}} other): modify to the union of the two transducers"""
         # TODO manage symbol tables
         cfst.Union(self.fst, other.fst[0])
+        return self
 
     def union(self, {{fst}} other):
         """fst.union({{fst}} other) -> union of the two transducers
@@ -447,6 +449,7 @@ cdef class {{fst}}(Fst):
         """fst.concatenate({{fst}} other): modify to the concatenation of the two transducers"""
         # TODO manage symbol tables
         cfst.Concat(self.fst, other.fst[0])
+        return self
 
     def concatenation(self, {{fst}} other):
         """fst.concatenation({{fst}} other) -> concatenation of the two transducers
@@ -472,6 +475,7 @@ cdef class {{fst}}(Fst):
     def set_closure(self):
         """fst.set_closure(): modify to the Kleene closure of the transducer"""
         cfst.Closure(self.fst, cfst.CLOSURE_STAR)
+        return self
 
     def closure(self):
         """fst.closure() -> Kleene closure of the transducer"""
@@ -482,6 +486,7 @@ cdef class {{fst}}(Fst):
     def invert(self):
         """fst.invert(): modify to the inverse of the transducer"""
         cfst.Invert(self.fst)
+        return self
     
     def inverse(self):
         """fst.inverse() -> inverse of the transducer"""
@@ -517,36 +522,43 @@ cdef class {{fst}}(Fst):
         if not self.input_deterministic:
             raise ValueError('transducer is not input deterministic')
         cfst.Minimize(self.fst)
+        return self
 
     def arc_sort_input(self):
         """fst.arc_sort_input(): sort the input arcs of the transducer"""
         cdef cfst.ILabelCompare[cfst.{{arc}}]* icomp = new cfst.ILabelCompare[cfst.{{arc}}]()
         cfst.ArcSort(self.fst, icomp[0])
         del icomp
+        return self
 
     def arc_sort_output(self):
         """fst.arc_sort_output(): sort the output arcs of the transducer"""
         cdef cfst.OLabelCompare[cfst.{{arc}}]* ocomp = new cfst.OLabelCompare[cfst.{{arc}}]()
         cfst.ArcSort(self.fst, ocomp[0])
         del ocomp
+        return self
 
     def top_sort(self):
         """fst.top_sort(): topologically sort the nodes of the transducer"""
         cfst.TopSort(self.fst)
+        return self
 
     def project_input(self):
         """fst.project_input(): project the transducer on the input side"""
         cfst.Project(self.fst, cfst.PROJECT_INPUT)
         self.osyms = self.isyms
+        return self
 
     def project_output(self):
         """fst.project_output(): project the transducer on the output side"""
         cfst.Project(self.fst, cfst.PROJECT_OUTPUT)
         self.isyms = self.osyms
+        return self
 
     def remove_epsilon(self):
         """fst.remove_epsilon(): remove the epsilon transitions from the transducer"""
         cfst.RmEpsilon(self.fst)
+        return self
 
     def _tosym(self, label, io):
         if isinstance(label, int):
@@ -568,12 +580,14 @@ cdef class {{fst}}(Fst):
             op.push_back(pair[int, int](self._tosym(old, False), self._tosym(new, False)))
         cfst.Relabel(self.fst, ip[0], op[0])
         del ip, op
+        return self
 
     def prune(self, threshold):
         """fst.prune(threshold): prune the transducer"""
         if not isinstance(threshold, {{weight}}):
             threshold = {{weight}}(threshold)
         cfst.Prune(self.fst, (<{{weight}}> threshold).weight[0])
+        return self
         
     def connect(self):
         """fst.connect(): removes states and arcs that are not on successful paths."""
@@ -669,6 +683,7 @@ cdef class SimpleFst(StdVectorFst):
         while src > len(self) - 1:
             self.add_state()
         StdVectorFst.add_arc(self, src, tgt, self.isyms[ilabel], self.osyms[olabel], weight)
+        return self
 
     def __getitem__(self, stateid):
         while stateid > len(self) - 1:
@@ -686,3 +701,4 @@ cdef class Acceptor(SimpleFst):
         """fst.add_arc(int source, int dest, label, weight=None):
         add an arc source->dest labeled with label and weighted with weight"""
         SimpleFst.add_arc(self, src, tgt, label, label, weight)
+        return self

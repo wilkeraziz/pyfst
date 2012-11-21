@@ -56,7 +56,7 @@ t.shortest_path() # 2 -(a:A/0.5)-> 1 -(c:C/2.5)-> 0/3.5
 
 ## Examples
 
-In `examples` you will find a bunch of test cases, e.g. `edit.py`, `sampling.py`, etc.
+In `examples` you will find a bunch of test cases, e.g. `edit.py`, `sampling.py`, `matching.py`, etc.
 
 ## IPython notebook
 

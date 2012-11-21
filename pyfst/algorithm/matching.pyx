@@ -10,14 +10,14 @@ def _masked(V):
     for sym, labels in V.iteritems():
         yield sym, labels
 
-def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
+def substring_matcher(V, N, alpha, fst = StdVectorFst, sort = True):
     '''
     Builds the deterministic FSA (DFA) that reweights a substring (represented by a mask).
     @type V: dict (if N is a mask) or other set-like iterable (if N is directly specified in terms of the vocabulary)
     @param N: substring (sequence of "words")
     @type N: sequence
     @param alpha: weight
-    @param one: 1 in the chosen semiring (defaults to TropicalSemiring.one())
+    @param fst: Fst constructor
     @return: label-sorted DFA
 
     '''
@@ -27,7 +27,7 @@ def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     last = len(N)
 
     # initialize the FST
-    f = make_fsa(states = last + 1, initial = 0, final = [0 , last])
+    f = make_fsa(states = last + 1, initial = 0, final = [0 , last], fst = fst)
     one = float(f.semiring()(True))
 
     weight = lambda destination: alpha if destination == last else one
@@ -46,7 +46,7 @@ def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
                 [f.add_arc(i, i + 1, label, label, w) for label in labels]
             elif sym in seen:
                 # symbols in seen loopback to j = (the state that remembers the longest suffix of the currently accepted string) or 0 if j does not exist
-                key = tuple(reversed(N[:i] + [sym]))
+                key = tuple(reversed(N[:i] + tuple([sym])))
                 _, sid = prefixes.longest_prefix_item(key, (None, 0))
                 w = weight(sid)
                 [f.add_arc(i, sid, label, label, w) for label in labels]
@@ -58,7 +58,7 @@ def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     # last state
     for sym, labels in mapper(V):
         if sym in seen:
-            key = tuple(reversed(N + [sym]))
+            key = tuple(reversed(N + tuple([sym])))
             _, sid = prefixes.longest_prefix_item(key, (None, 0))
             w = weight(sid)
             [f.add_arc(last, sid, label, label, w) for label in labels]
@@ -68,7 +68,7 @@ def substring_matcher(V, N, alpha, Fst = StdVectorFst, sort = True):
     if sort: f.arc_sort_input()
     return f
 
-def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
+def trie_matcher(V, N, fst = StdVectorFst, sort = True):
     '''
     Builds the deterministic FSA (DFA) that reweights a substring.
     A substring maybe represented directly with the symbols of the vocabulary (in which case the vocabulary is a set of symbols),
@@ -84,7 +84,7 @@ def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
 
     '''
 
-    one = float(Fst.semiring()(True))
+    one = float(fst.semiring()(True))
 
     seen = set()
     last = 0 # reserves 0 to the empty prefix
@@ -112,7 +112,7 @@ def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
         stateinfo[sid][0] += stateinfo[state][0] # accumulate weights
         stateinfo[sid][1] |= stateinfo[state][1] # update 'is_final' property
     
-    f = make_fsa(states = last + 1, initial = 0, final = (sid for sid, props in enumerate(stateinfo) if props[1]))
+    f = make_fsa(states = last + 1, initial = 0, final = (sid for sid, props in enumerate(stateinfo) if props[1]), fst = fst)
 
     # Transitions at each state
     # I am going to duplicate code, because it turned out to be 10-15% faster than using the mappers 
@@ -136,3 +136,44 @@ def trie_matcher(V, N, Fst = StdVectorFst, sort = True):
     if sort: f.arc_sort_input()
     return f
 
+def path_matcher(V, P, fst = StdVectorFst, sort = True):
+    '''
+    Builds the deterministic FSA (DFA) that detects a set of paths.
+    A path maybe represented directly with the symbols of the vocabulary (in which case the vocabulary is a set of symbols),
+    or indirectly by a mask, in which case the vocabulary is a dictionary that maps intermediate symbols to the terminal ones.
+    Example: 
+        N = [1,2,3]
+        V = {1:[5,6], 2:[1,2], 3:[3,9], 4:[4,7,8]}
+
+    @param V: vocabulary
+    @type: dict or set
+    @param P: paths represented in a Trie (weights will be disregarded)
+    @return: label-sorted DFA
+
+    '''
+
+    one = float(fst.semiring()(True))
+    sto = 0
+    prefixes = Trie({tuple():sto})
+    arcs = []
+    finals = set()
+    for path in sorted(P.iterkeys()):
+        head, sfrom = prefixes.longest_prefix_item(path[:-1])
+        for i in xrange(len(head), len(path)):
+            sto += 1
+            prefixes[tuple(path[:i + 1])] = sto
+            arcs.append([sfrom, sto, path[i]])
+            sfrom = sto
+        finals.add(sto)
+
+    prefixes.clear()
+    
+    f = make_fsa(states = sto + 1, initial = 0, final = finals, fst = fst)
+
+    if isinstance(V, dict):
+        [[f.add_arc(sfrom, sto, sym, sym, one) for sym in V[label]] for sfrom, sto, label in arcs]
+    else:
+        [f.add_arc(sfrom, sto, sym, sym, one) for sfrom, sto, sym in arcs]
+
+    if sort: f.arc_sort_input()
+    return f
