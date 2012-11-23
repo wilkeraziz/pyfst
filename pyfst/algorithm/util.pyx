@@ -1,21 +1,34 @@
-import gv
 from random import random
 from pyfst.fst import StdVectorFst
 
-def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
-    """
-    Draws an FST in one of the available formats (depends on gv).
-    @param fst: FST.
-    @type fst: pyfst.fst.Fst
-    @param stem: path except for extension.
-    @param ext: output type (defaults to png).
-    """
-    with open(stem + '.dot', 'wb') as D:
-        D.write(fst.draw(isym, osym))
+try:
+    import gv
+    def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
+        """
+        Draws an FST in one of the available formats (depends on gv).
+        @param fst: FST.
+        @type fst: pyfst.fst.Fst
+        @param stem: path except for extension.
+        @param ext: output type (defaults to png).
+        """
+        with open(stem + '.dot', 'wb') as D:
+            D.write(fst.draw(isym, osym))
 
-    dot = gv.read(stem + '.dot')
-    gv.layout(dot, 'dot')
-    gv.render(dot, ext, stem + '.' + ext)
+        dot = gv.read(stem + '.dot')
+        gv.layout(dot, 'dot')
+        gv.render(dot, ext, stem + '.' + ext)
+except ImportError:
+    def draw(fst, stem, ext = 'png', isym = None, osym = None, ssym = None):
+        """
+        Generates a dot representation of the FST (consider installing gv).
+        @param fst: FST.
+        @type fst: pyfst.fst.Fst
+        @param stem: path except for extension.
+        @param ext: output type (disregarded).
+        """
+        with open(stem + '.dot', 'wb') as D:
+            D.write(fst.draw(isym, osym))
+
 
 def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = False, fst = StdVectorFst):
     """

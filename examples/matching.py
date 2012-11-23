@@ -74,7 +74,7 @@ elif alg == "path":
         pattern = tuple(int(x) for x in pattern.split(','))
         trie[pattern] = True
     
-    dfa = path_matcher(V, trie)
+    dfa = path_matcher(trie)
     draw(dfa, ostem)
     try:
         while True:

@@ -136,18 +136,18 @@ def trie_matcher(V, N, fst = StdVectorFst, sort = True):
     if sort: f.arc_sort_input()
     return f
 
-def path_matcher(V, P, fst = StdVectorFst, sort = True):
+def path_matcher(P, symmap = None, fst = StdVectorFst, sort = True):
     '''
     Builds the deterministic FSA (DFA) that detects a set of paths.
-    A path maybe represented directly with the symbols of the vocabulary (in which case the vocabulary is a set of symbols),
-    or indirectly by a mask, in which case the vocabulary is a dictionary that maps intermediate symbols to the terminal ones.
+    A path maybe represented directly with the symbols of the vocabulary,
+    or indirectly by a mask, in which case the a symbol map (a dictionary that maps intermediate symbols to the terminal ones) is necessary.
     Example: 
         N = [1,2,3]
-        V = {1:[5,6], 2:[1,2], 3:[3,9], 4:[4,7,8]}
+        symmap = {1:[5,6], 2:[1,2], 3:[3,9], 4:[4,7,8]}
 
-    @param V: vocabulary
-    @type: dict or set
-    @param P: paths represented in a Trie (weights will be disregarded)
+    @param P: paths represented in a sequence, dictionary or Trie (weights will be disregarded)
+    @param symmap: symbols map (defaults to None)
+    @type: dict
     @return: label-sorted DFA
 
     '''
@@ -157,7 +157,7 @@ def path_matcher(V, P, fst = StdVectorFst, sort = True):
     prefixes = Trie({tuple():sto})
     arcs = []
     finals = set()
-    for path in sorted(P.iterkeys()):
+    for path in sorted(P):
         head, sfrom = prefixes.longest_prefix_item(path[:-1])
         for i in xrange(len(head), len(path)):
             sto += 1
@@ -170,8 +170,8 @@ def path_matcher(V, P, fst = StdVectorFst, sort = True):
     
     f = make_fsa(states = sto + 1, initial = 0, final = finals, fst = fst)
 
-    if isinstance(V, dict):
-        [[f.add_arc(sfrom, sto, sym, sym, one) for sym in V[label]] for sfrom, sto, label in arcs]
+    if isinstance(symmap, dict):
+        [[f.add_arc(sfrom, sto, sym, sym, one) for sym in symmap[label]] for sfrom, sto, label in arcs]
     else:
         [f.add_arc(sfrom, sto, sym, sym, one) for sfrom, sto, sym in arcs]
 
