@@ -646,25 +646,37 @@ cdef class StdVectorFst(Fst):
         cdef bytes out_str = out.str()
         del drawer, out
         return out_str
-    
-    def paths(self, bint noeps = True):
-        '''Enumerates paths doing a depth-first search'''
-        def visit(int sid, list prefix):
-            cdef StdArc arc
-            cdef list path
-            if not self[sid].final:
-                for arc in self[sid]:
-                    if noeps and arc.ilabel == EPSILON_ID:
-                        for path in visit(arc.nextstate, prefix):
-                            yield path
-                    else:
-                        for path in visit(arc.nextstate, prefix + [arc]):
-                            yield path
-            else:
-                yield prefix
 
-        for path in visit(self.start, []):
-            yield path
+    def _depth_first(self, int stateid, prefix=()):
+        """fst._visit(stateid, prefix): depth-first search"""
+        if self[stateid].final:
+            yield prefix
+        for arc in self[stateid]:
+            for path in self._depth_first(arc.nextstate, prefix+(arc,)):
+                yield path
+
+    def paths(self):
+        """fst.paths() -> iterator over all the paths in the transducer"""
+        return self._depth_first(self.start)
+    
+#    def paths(self, bint noeps = True):
+#        '''Enumerates paths doing a depth-first search'''
+#        def visit(int sid, list prefix):
+#            cdef StdArc arc
+#            cdef list path
+#            if not self[sid].final:
+#                for arc in self[sid]:
+#                    if noeps and arc.ilabel == EPSILON_ID:
+#                        for path in visit(arc.nextstate, prefix):
+#                            yield path
+#                    else:
+#                        for path in visit(arc.nextstate, prefix + [arc]):
+#                            yield path
+#            else:
+#                yield prefix
+#
+#        for path in visit(self.start, []):
+#            yield path
 
 
 cdef class LogWeight:
@@ -1185,25 +1197,37 @@ cdef class LogVectorFst(Fst):
         cdef bytes out_str = out.str()
         del drawer, out
         return out_str
-    
-    def paths(self, bint noeps = True):
-        '''Enumerates paths doing a depth-first search'''
-        def visit(int sid, list prefix):
-            cdef LogArc arc
-            cdef list path
-            if not self[sid].final:
-                for arc in self[sid]:
-                    if noeps and arc.ilabel == EPSILON_ID:
-                        for path in visit(arc.nextstate, prefix):
-                            yield path
-                    else:
-                        for path in visit(arc.nextstate, prefix + [arc]):
-                            yield path
-            else:
-                yield prefix
 
-        for path in visit(self.start, []):
-            yield path
+    def _depth_first(self, int stateid, prefix=()):
+        """fst._visit(stateid, prefix): depth-first search"""
+        if self[stateid].final:
+            yield prefix
+        for arc in self[stateid]:
+            for path in self._depth_first(arc.nextstate, prefix+(arc,)):
+                yield path
+
+    def paths(self):
+        """fst.paths() -> iterator over all the paths in the transducer"""
+        return self._depth_first(self.start)
+    
+#    def paths(self, bint noeps = True):
+#        '''Enumerates paths doing a depth-first search'''
+#        def visit(int sid, list prefix):
+#            cdef LogArc arc
+#            cdef list path
+#            if not self[sid].final:
+#                for arc in self[sid]:
+#                    if noeps and arc.ilabel == EPSILON_ID:
+#                        for path in visit(arc.nextstate, prefix):
+#                            yield path
+#                    else:
+#                        for path in visit(arc.nextstate, prefix + [arc]):
+#                            yield path
+#            else:
+#                yield prefix
+#
+#        for path in visit(self.start, []):
+#            yield path
 
 
 cdef class SimpleFst(StdVectorFst):
