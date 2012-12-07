@@ -12,7 +12,7 @@ try:
         @param ext: output type (defaults to png).
         """
         with open(stem + '.dot', 'wb') as D:
-            D.write(fst.draw(isym, osym))
+            D.write(fst.draw(isym, osym, ssym))
 
         dot = gv.read(stem + '.dot')
         gv.layout(dot, 'dot')
@@ -27,7 +27,7 @@ except ImportError:
         @param ext: output type (disregarded).
         """
         with open(stem + '.dot', 'wb') as D:
-            D.write(fst.draw(isym, osym))
+            D.write(fst.draw(isym, osym, ssym))
 
 
 def make_fsa(int states = 0, int initial = -1, final = [], arcs = [], sort = False, fst = StdVectorFst):

@@ -27,7 +27,7 @@ if alg == "substring":
     print 'pattern: %s (%s)' % (pattern, weight)
     pattern = [int(x) for x in pattern.split(',')]
     weight = float(weight)
-    dfa = substring_matcher(V, pattern, weight)
+    dfa = substring_matcher(V, tuple(pattern), weight)
     draw(dfa, ostem)
     try:
         while True:
